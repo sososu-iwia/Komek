@@ -1,0 +1,12 @@
+export type Skill = { id: string; name: string; category: string; custom: boolean };
+export type TeachingSkill = { skillId: string; proficiency: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'; skill: Skill };
+export type Profile = { fullName: string; faculty: string; studyYear: number; bio: string };
+export type User = { id: string; email?: string; role?: 'STUDENT' | 'ADMIN'; fictional: boolean; profile: Profile; teachingSkills: TeachingSkill[]; learningSkills: { skillId: string; skill: Skill }[]; availability: { day: number; hour: number }[] };
+export type Match = User & { overlapHours: number; youCanLearn: TeachingSkill[]; youCanTeach: TeachingSkill[]; averageRating?: number | null; reviewCount?: number };
+export type Page<T> = { items: T[]; total: number; page: number; limit: number; unread?: number };
+export type Person = { id: string; fictional: boolean; profile: Profile };
+export type Review = { id: string; sessionId: string; authorId: string; subjectId: string; rating: number; text: string; tags: string[]; createdAt: string; author?: { id: string; profile: { fullName: string } } };
+export type Session = { id: string; ordinal: number; teacherId: string; learnerId: string; skillId: string; skill: Skill; topic: string; startsAt: string; duration: number; location: 'CAMPUS' | 'ONLINE'; locationDetail: string; completedAt: string | null; confirmations: { userId: string; confirmedAt: string }[]; reviews: Review[] };
+export type Exchange = { id: string; senderId: string; receiverId: string; nextResponderId: string; sender: Person; receiver: Person; status: 'PROPOSED' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DECLINED' | 'CANCELLED' | 'DISPUTED'; message: string; responseNote: string; sessions: Session[]; createdAt: string };
+export type Notice = { id: string; type: string; title: string; exchangeId: string | null; readAt: string | null; createdAt: string };
+export type Config = { allowedEmailDomains: string[]; localDemo: boolean };

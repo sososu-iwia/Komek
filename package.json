@@ -1,0 +1,32 @@
+{
+  "name": "komek-skills",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web 'npm run dev -w @komek/api' 'npm run dev -w @komek/web'",
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "eslint apps scripts",
+    "test": "npm run test:setup && npm run test -w @komek/api",
+    "test:e2e": "npm run test:e2e -w @komek/web",
+    "db:generate": "npm run db:generate -w @komek/api",
+    "db:migrate": "npm run db:migrate -w @komek/api",
+    "db:seed": "npm run db:seed -w @komek/api",
+    "test:setup": "node scripts/test-db.cjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "typescript-eslint": "^8.46.0",
+    "eslint": "^9.39.0",
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.0",
+    "effect": "^3.20.0"
+  }
+}

@@ -1,0 +1,4 @@
+import { Star } from 'lucide-react';
+export function RatingInput({ value, onChange, name }: { value: number; onChange: (value: number) => void; name: string }) {
+  return <fieldset><legend className="mb-3 text-xs font-semibold">How was your session?</legend><div className="flex flex-wrap items-center gap-1">{[1, 2, 3, 4, 5].map(rating => <label key={rating} className="relative cursor-pointer rounded-lg p-1.5"><input type="radio" className="peer sr-only" name={name} value={rating} checked={value === rating} onChange={() => onChange(rating)} aria-label={`${rating} star${rating === 1 ? '' : 's'}`}/><Star size={27} className="rounded text-warning peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-brand" fill={rating <= value ? 'currentColor' : 'none'}/></label>)}<span className="ml-2 text-[11px] text-muted">{['', 'Could be better', 'Room to grow', 'Good session', 'Really helpful', 'A great exchange'][value]}</span></div></fieldset>;
+}

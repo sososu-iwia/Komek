@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum Proficiency {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ExchangeStatus {
+  PROPOSED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  DECLINED
+  CANCELLED
+  DISPUTED
+}
+
+enum Location {
+  CAMPUS
+  ONLINE
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id                 String                @id @default(cuid())
+  email              String                @unique
+  passwordHash       String
+  emailVerifiedAt    DateTime?
+  role               Role                  @default(STUDENT)
+  fictional          Boolean               @default(false)
+  createdAt          DateTime              @default(now())
+  profile            Profile?
+  authSessions       AuthSession[]
+  verificationTokens VerificationToken[]
+  teachingSkills     UserTeachingSkill[]
+  learningSkills     UserLearningSkill[]
+  availability       AvailabilitySlot[]
+  sentExchanges      Exchange[]            @relation("Sender")
+  receivedExchanges  Exchange[]            @relation("Receiver")
+  teachingSessions   ExchangeSession[]     @relation("Teacher")
+  learningSessions   ExchangeSession[]     @relation("Learner")
+  confirmations      SessionConfirmation[]
+  reviewsWritten     Review[]              @relation("ReviewAuthor")
+  reviewsReceived    Review[]              @relation("ReviewSubject")
+  notifications      Notification[]
+  blocks             UserBlock[]           @relation("Blocker")
+  blockedBy          UserBlock[]           @relation("Blocked")
+  reports            UserReport[]          @relation("Reporter")
+  reportedBy         UserReport[]          @relation("Reported")
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Profile {
+  id        String @id @default(cuid())
+  userId    String @unique
+  fullName  String
+  faculty   String @default("")
+  studyYear Int    @default(1)
+  bio       String @default("")
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id        String              @id @default(cuid())
+  name      String              @unique
+  category  String
+  custom    Boolean             @default(false)
+  teachers  UserTeachingSkill[]
+  learners  UserLearningSkill[]
+  sessions  ExchangeSession[]
+}
+
+model UserTeachingSkill {
+  userId      String
+  skillId     String
+  proficiency Proficiency
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill       Skill       @relation(fields: [skillId], references: [id])
+  @@id([userId, skillId])
+  @@index([skillId])
+}
+
+model UserLearningSkill {
+  userId  String
+  skillId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill   Skill  @relation(fields: [skillId], references: [id])
+  @@id([userId, skillId])
+  @@index([skillId])
+}
+
+model AvailabilitySlot {
+  id     String @id @default(cuid())
+  userId String
+  day    Int
+  hour   Int
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, day, hour])
+}
+
+model Exchange {
+  id              String            @id @default(cuid())
+  senderId        String
+  receiverId      String
+  nextResponderId String
+  status          ExchangeStatus    @default(PROPOSED)
+  message         String            @default("")
+  responseNote    String            @default("")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  sender          User              @relation("Sender", fields: [senderId], references: [id])
+  receiver        User              @relation("Receiver", fields: [receiverId], references: [id])
+  sessions        ExchangeSession[]
+  @@index([senderId, status])
+  @@index([receiverId, status])
+}
+
+model ExchangeSession {
+  id            String                @id @default(cuid())
+  exchangeId    String
+  ordinal       Int
+  teacherId     String
+  learnerId     String
+  skillId       String
+  topic         String
+  startsAt      DateTime
+  duration      Int
+  location      Location
+  locationDetail String               @default("")
+  completedAt   DateTime?
+  exchange      Exchange              @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+  teacher       User                  @relation("Teacher", fields: [teacherId], references: [id])
+  learner       User                  @relation("Learner", fields: [learnerId], references: [id])
+  skill         Skill                 @relation(fields: [skillId], references: [id])
+  confirmations SessionConfirmation[]
+  reviews       Review[]
+  @@unique([exchangeId, ordinal])
+  @@index([teacherId, startsAt])
+  @@index([learnerId, startsAt])
+}
+
+model SessionConfirmation {
+  id          String          @id @default(cuid())
+  sessionId   String
+  userId      String
+  confirmedAt DateTime        @default(now())
+  session     ExchangeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id])
+  @@unique([sessionId, userId])
+}
+
+model Review {
+  id        String          @id @default(cuid())
+  sessionId String
+  authorId  String
+  subjectId String
+  rating    Int
+  text      String
+  tags      String[]
+  createdAt DateTime        @default(now())
+  session   ExchangeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  author    User            @relation("ReviewAuthor", fields: [authorId], references: [id])
+  subject   User            @relation("ReviewSubject", fields: [subjectId], references: [id])
+  @@unique([sessionId, authorId])
+  @@index([subjectId])
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String
+  title      String
+  exchangeId String?
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+}
+
+model UserBlock {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model UserReport {
+  id         String       @id @default(cuid())
+  reporterId String
+  reportedId String
+  reason     String
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+  reporter   User         @relation("Reporter", fields: [reporterId], references: [id])
+  reported   User         @relation("Reported", fields: [reportedId], references: [id])
+  @@index([status, createdAt])
+}
